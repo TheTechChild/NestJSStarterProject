@@ -4,9 +4,9 @@ import { UpdateCoffeeDto } from './dto/update-coffee.dto';
 export declare class CoffeesController {
     private readonly coffeesService;
     constructor(coffeesService: CoffeesService);
-    findAll(paginationQuery: any): import("./entities/coffee.entity").Coffee[];
-    findOne(id: number): import("./entities/coffee.entity").Coffee;
-    create(createCoffeeDTO: CreateCoffeeDto): any;
-    update(id: string, updateCoffeeDto: UpdateCoffeeDto): void;
-    remove(id: string): void;
+    findAll(paginationQuery: any): Promise<import("./entities/coffee.entity").Coffee[]>;
+    findOne(id: number): Promise<import("./entities/coffee.entity").Coffee>;
+    create(createCoffeeDTO: CreateCoffeeDto): Promise<import("./entities/coffee.entity").Coffee>;
+    update(id: string, updateCoffeeDto: UpdateCoffeeDto): Promise<import("./entities/coffee.entity").Coffee>;
+    remove(id: string): Promise<import("./entities/coffee.entity").Coffee>;
 }

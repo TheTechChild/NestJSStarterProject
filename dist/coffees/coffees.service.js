@@ -14,44 +14,40 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CoffeesService = void 0;
 const common_1 = require("@nestjs/common");
+const coffee_entity_1 = require("./entities/coffee.entity");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
 let CoffeesService = class CoffeesService {
-    constructor() {
-        this.coffees = [
-            {
-                id: 1,
-                name: 'Shipwreck Roast',
-                brand: 'Buddy Brew',
-                flavors: ['chocolate', 'vanilla'],
-            },
-        ];
+    constructor(coffeeRepository) {
+        this.coffeeRepository = coffeeRepository;
     }
-    findOne(id) {
-        const coffee = this.coffees.find((item) => item.id === +id);
+    async findAll(paginationQuery) {
+        return this.coffeeRepository.find();
+    }
+    async findOne(id) {
+        const coffee = await this.coffeeRepository.findOne({ where: { id: +id } });
         if (!coffee) {
             throw new common_1.HttpException(`Coffee #${id} not found`, common_1.HttpStatus.NOT_FOUND);
         }
         return coffee;
     }
-    findAll(paginationQuery) {
-        const { limit, offset } = paginationQuery;
-        console.log(`limit: ${limit}, offset: ${offset}`);
-        return this.coffees;
+    async create(createCoffeeDto) {
+        const newCoffee = await this.coffeeRepository.create(createCoffeeDto);
+        return this.coffeeRepository.save(newCoffee);
     }
-    create(createCoffeeDto) {
-        this.coffees.push(createCoffeeDto);
-        return createCoffeeDto;
-    }
-    update(id, updateCoffeeDto) {
-        const existingCoffee = this.findOne(id);
-        if (existingCoffee) {
-            console.log(updateCoffeeDto);
+    async update(id, updateCoffeeDto) {
+        const coffee = await this.coffeeRepository.preload({
+            id: +id,
+            ...updateCoffeeDto
+        });
+        if (!coffee) {
+            throw new common_1.NotFoundException(`Coffee #${id} not found`);
         }
+        return this.coffeeRepository.save(coffee);
     }
-    delete(id) {
-        const coffeeIndex = this.coffees.findIndex((item) => item.id === +id);
-        if (coffeeIndex >= 0) {
-            this.coffees.splice(coffeeIndex, 1);
-        }
+    async delete(id) {
+        const coffee = await this.findOne(id);
+        return this.coffeeRepository.remove(coffee);
     }
 };
 exports.CoffeesService = CoffeesService;
@@ -59,9 +55,11 @@ __decorate([
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], CoffeesService.prototype, "findAll", null);
 exports.CoffeesService = CoffeesService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_1.InjectRepository)(coffee_entity_1.Coffee)),
+    __metadata("design:paramtypes", [typeorm_2.Repository])
 ], CoffeesService);
 //# sourceMappingURL=coffees.service.js.map
