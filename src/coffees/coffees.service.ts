@@ -4,39 +4,44 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UpdateCoffeeDto } from './dto/update-coffee.dto';
 import { CreateCoffeeDto } from './dto/create-coffee.dto';
+import { Flavor } from './entities/flavor.entity';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 
 @Injectable()
 export class CoffeesService {
   constructor(
     @InjectRepository(Coffee)
     private readonly coffeeRepository: Repository<Coffee>,
+
+    @InjectRepository(Flavor)
+    private readonly flavorRepository: Repository<Flavor>,
   ) {}
 
-  async findAll(@Query() paginationQuery) {
-    return this.coffeeRepository.find()
+  async findAll(@Query() paginationQuery: PaginationQueryDto) {
+    const { limit, offset } = paginationQuery;
+    return this.coffeeRepository.find({
+      relations: { flavors: true },
+      skip: offset,
+      take: limit,
+    })
   }
 
   async findOne(id: string) {
-    const coffee = await this.coffeeRepository.findOne({where: { id: +id }});
-    if (!coffee) {
-      throw new HttpException(`Coffee #${id} not found`, HttpStatus.NOT_FOUND);
-    }
+    const coffee = await this.coffeeRepository.findOne({where: { id: parseInt(id) }, relations: { flavors: true } });
+    if (!coffee) throw new HttpException(`Coffee #${id} not found`, HttpStatus.NOT_FOUND);
     return coffee;
   }
 
   async create(createCoffeeDto: CreateCoffeeDto) {
-    const newCoffee = await this.coffeeRepository.create(createCoffeeDto);
+    const flavors = createCoffeeDto.flavors && await this.preloadFlavorsByName(createCoffeeDto.flavors);
+    const newCoffee = await this.coffeeRepository.create({ ...createCoffeeDto, flavors});
     return this.coffeeRepository.save(newCoffee);
   }
 
   async update(id: string, updateCoffeeDto: UpdateCoffeeDto) {
-    const  coffee = await this.coffeeRepository.preload({
-      id: +id,
-      ...updateCoffeeDto
-    })
-    if (!coffee) {
-      throw new NotFoundException(`Coffee #${id} not found`);
-    }
+    const flavors = updateCoffeeDto.flavors && (await this.preloadFlavorsByName(updateCoffeeDto.flavors));
+    const  coffee = await this.coffeeRepository.preload({ id: parseInt(id), ...updateCoffeeDto, flavors })
+    if (!coffee) throw new NotFoundException(`Coffee #${id} not found`);
     return this.coffeeRepository.save(coffee);
   }
 
