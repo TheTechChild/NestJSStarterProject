@@ -44,4 +44,14 @@ export class CoffeesService {
     const coffee = await this.findOne(id);
     return this.coffeeRepository.remove(coffee);
   }
+
+  private async preloadFlavorByName(name: string): Promise<Flavor> {
+    const existingFlavor = await this.flavorRepository.findOne({ where: { name }});
+    if (existingFlavor) return existingFlavor;
+    return this.flavorRepository.create({ name });
+  }
+
+  private preloadFlavorsByName(flavors: string[]): Promise<Flavor[]> {
+    return Promise.all(flavors.map(name => this.preloadFlavorByName(name)));
+  }
 }
